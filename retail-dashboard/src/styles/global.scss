@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f6fa;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  .brand {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+}
+
+.app-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.page-title {
+  margin: 8px 0 20px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.card-spacer {
+  margin-bottom: 12px;
+}
+
+.card-spacer-lg {
+  margin-bottom: 22px;
+}
