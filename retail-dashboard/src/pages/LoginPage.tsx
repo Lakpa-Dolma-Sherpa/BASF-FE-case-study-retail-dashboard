@@ -35,7 +35,7 @@ export default function LoginPage() {
     setError(null);
     try {
       const res = await login(values.username, values.password);
-      dispatch(loggedIn(res as { token: string; user: any }));
+      dispatch(loggedIn(res));
       navigate('/overview');
     } catch (e) {
       if (isAxiosError(e) && e.response?.status === 401) {

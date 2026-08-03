@@ -1,12 +1,18 @@
 import { api } from './client';
+import type { DailyRevenuePoint, Store, Transaction, User } from '@/types/domain';
 
-export async function login(username: string, password: string): Promise<unknown> {
-  const res = await api.post<unknown>('/login', { username, password });
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export async function login(username: string, password: string): Promise<LoginResponse> {
+  const res = await api.post<LoginResponse>('/login', { username, password });
   return res.data;
 }
 
-export async function fetchStores(): Promise<unknown> {
-  const res = await api.get<unknown>('/stores');
+export async function fetchStores(config?: { signal?: AbortSignal }): Promise<Store[]> {
+  const res = await api.get<Store[]>('/stores', { signal: config?.signal });
   return res.data;
 }
 
@@ -15,18 +21,18 @@ export async function fetchTransactions(params: {
   from?: string;
   to?: string;
   limit?: number;
-}): Promise<unknown> {
-  const res = await api.get<unknown>('/transactions', { params });
+}): Promise<Transaction[]> {
+  const res = await api.get<Transaction[]>('/transactions', { params });
   return res.data;
 }
 
-export async function fetchDailyRevenue(params: {
-  storeIds: string[];
-  from: string;
-  to: string;
-}): Promise<unknown> {
-  const res = await api.get<unknown>('/daily-revenue', {
+export async function fetchDailyRevenue(
+  params: { storeIds: string[]; from: string; to: string },
+  config?: { signal?: AbortSignal }
+): Promise<DailyRevenuePoint[]> {
+  const res = await api.get<DailyRevenuePoint[]>('/daily-revenue', {
     params: { ...params, storeIds: params.storeIds.join(',') },
+    signal: config?.signal,
   });
   return res.data;
 }
