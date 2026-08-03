@@ -6,14 +6,15 @@ export interface DayMethodPoint {
   revenue: number;
 }
 
+export function storeLocalDate(timestamp: string): string {
+  return timestamp.slice(0, 10);
+}
+
 /** Group transactions into revenue per calendar day and payment method. */
 export function groupByDayAndMethod(transactions: Transaction[]): DayMethodPoint[] {
   const buckets = new Map<string, DayMethodPoint>();
   for (const t of transactions) {
-    
-    // toISOString() gives us the store's local calendar day,
-    // so buckets match what the shop reports
-    const date = new Date(t.timestamp).toISOString().slice(0, 10);
+    const date = storeLocalDate(t.timestamp);
     const key = `${date}|${t.paymentMethod}`;
     let b = buckets.get(key);
     if (!b) {
@@ -51,7 +52,7 @@ export function computeSummary(transactions: Transaction[]): Summary {
     seen.push(t);
 
     totalRevenue += t.amount;
-    const day = new Date(t.timestamp).toISOString().slice(0, 10);
+    const day = storeLocalDate(t.timestamp);
     perDay.set(day, (perDay.get(day) ?? 0) + t.amount);
   }
 
