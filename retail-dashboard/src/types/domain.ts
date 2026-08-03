@@ -6,6 +6,14 @@ export interface Store {
   openedAt: string; // ISO date
 }
 
+export type PaymentMethod = 'card' | 'cash' | 'mobile';
+
+export const PAYMENT_METHOD_COLORS: Record<PaymentMethod, string> = {
+  card: '#2f54eb',
+  mobile: '#08979c',
+  cash: '#d48806',
+};
+
 export interface Transaction {
   id: string;
   storeId: string;
@@ -13,7 +21,7 @@ export interface Transaction {
   timestamp: string;
   amount: number; // EUR
   items: number;
-  paymentMethod: 'card' | 'cash' | 'mobile';
+  paymentMethod: PaymentMethod;
 }
 
 export interface DailyRevenuePoint {

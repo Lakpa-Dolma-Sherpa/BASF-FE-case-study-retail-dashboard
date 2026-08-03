@@ -1,5 +1,6 @@
 import { AgGridReact } from 'ag-grid-react';
-import type { Transaction } from '@/types/domain';
+import type { PaymentMethod, Transaction } from '@/types/domain';
+import { PAYMENT_METHOD_COLORS } from '@/types/domain';
 import { themeAlpine } from 'ag-grid-community';
 
 interface Props {
@@ -22,10 +23,9 @@ export default function TransactionsGrid({ rows }: Props) {
                         field: 'paymentMethod',
                         headerName: 'Payment',
                         width: 130,
-                        cellRenderer: (p: any) => {
-                            const colors: Record<string, string> = { card: '#2f54eb', mobile: '#08979c', cash: '#d48806' };
-                            return <span style={{ color: colors[p.value] }}>{p.value}</span>;
-                        },
+                        cellRenderer: (p: { value: PaymentMethod }) => (
+                            <span style={{ color: PAYMENT_METHOD_COLORS[p.value] }}>{p.value}</span>
+                        ),
                     },
                 ]}
                 defaultColDef={{ sortable: true, resizable: true }}

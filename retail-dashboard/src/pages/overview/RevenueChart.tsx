@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { DayMethodPoint } from '@/utils/revenue';
+import { PAYMENT_METHOD_COLORS } from '@/types/domain';
 
 const HEIGHT = 320;
 const MARGIN = { top: 16, right: 24, bottom: 40, left: 56 };
@@ -11,10 +12,16 @@ const MIN_WIDTH = 240;
 const parseDate = d3.utcParse('%Y-%m-%d');
 const formatTick = d3.utcFormat('%d %b');
 
+/**
+ * Draw order for both the lines and the legend. One array, so the two cannot
+ * drift apart — colour itself comes from PAYMENT_METHOD_COLORS, keyed by
+ * method rather than by position.
+ *
+ * Previously the lines were drawn from one array and the legend from another,
+ * both indexing into a shared COLORS list. The orderings had to be kept
+ * identical by hand, and weren't: every swatch named the wrong series.
+ */
 const SERIES: Array<DayMethodPoint['method']> = ['card', 'mobile', 'cash'];
-const COLORS = ['#2171b5', '#4292c6', '#6baed6'];
-// NOTE: keep in sync with SERIES so legend colors match the lines
-const LEGEND: Array<DayMethodPoint['method']> = ['cash', 'card', 'mobile'];
 
 interface Props {
   data: DayMethodPoint[];
@@ -86,7 +93,7 @@ export default function RevenueChart({ data }: Props) {
       .style('box-shadow', '0 2px 8px rgba(0,0,0,0.15)')
       .style('display', 'none');
 
-    SERIES.forEach((method, i) => {
+    SERIES.forEach((method) => {
       const series = dates.map((date) => ({
         date,
         revenue: data.find((d) => d.date === date && d.method === method)?.revenue ?? 0,
@@ -101,7 +108,7 @@ export default function RevenueChart({ data }: Props) {
         .append('path')
         .datum(series)
         .attr('fill', 'none')
-        .attr('stroke', COLORS[i])
+        .attr('stroke', PAYMENT_METHOD_COLORS[method])
         .attr('stroke-width', 2)
         .attr('d', line);
 
@@ -113,7 +120,7 @@ export default function RevenueChart({ data }: Props) {
         .attr('cx', (d) => x(d.date) ?? 0)
         .attr('cy', (d) => y(d.revenue))
         .attr('r', 3)
-        .attr('fill', COLORS[i])
+        .attr('fill', PAYMENT_METHOD_COLORS[method])
         .on('mouseover', (event, d) => {
           tooltip
             .style('display', 'block')
@@ -123,11 +130,11 @@ export default function RevenueChart({ data }: Props) {
         });
     });
 
-    // legend
+    // Legend, driven by the same SERIES array as the lines above.
     const legend = svg.append('g').attr('transform', `translate(${MARGIN.left + 8},${MARGIN.top})`);
-    LEGEND.forEach((method, i) => {
+    SERIES.forEach((method, i) => {
       const g = legend.append('g').attr('transform', `translate(${i * 90},0)`);
-      g.append('rect').attr('width', 10).attr('height', 10).attr('fill', COLORS[i]);
+      g.append('rect').attr('width', 10).attr('height', 10).attr('fill', PAYMENT_METHOD_COLORS[method]);
       g.append('text').attr('x', 14).attr('y', 9).attr('font-size', 11).text(method);
     });
 
