@@ -35,6 +35,109 @@
     width: 100%;
   }
 
+  // While a refetch is in flight, content holds its previous render at reduced
+  // opacity — no skeleton swap, no layout jump, no flash.
+  &__stale {
+    opacity: 0.45;
+    transition: opacity 120ms ease-out;
+    pointer-events: none;
+  }
+
+  &__card {
+    margin-bottom: 16px;
+  }
+
+  .chart {
+    width: 100%;
+
+    &__plot {
+      position: relative;
+      width: 100%;
+    }
+
+    svg {
+      display: block;
+      // Focus lives on the interaction overlay; the ring would trace the whole
+      // canvas and read as an error state.
+      outline: none;
+    }
+
+    &__key {
+      display: inline-block;
+      width: 12px;
+      height: 2px;
+      border-radius: 1px;
+      flex: none;
+    }
+
+    &__tooltip {
+      position: absolute;
+      top: 12px;
+      transform: translateX(12px);
+      min-width: 190px;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid #e5e5e2;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      pointer-events: none;
+      z-index: 2;
+
+      &--flip {
+        transform: translateX(calc(-100% - 12px));
+      }
+    }
+
+    &__tooltip-date {
+      margin-bottom: 6px;
+      color: #6b6b66;
+      font-size: 11px;
+    }
+
+    &__tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0;
+      font-size: 12px;
+    }
+
+    &__tooltip-value {
+      margin-left: auto;
+      order: 3;
+      color: #1a1a19;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &__tooltip-name {
+      order: 2;
+      color: #6b6b66;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    &__legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    &__legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      // Identity ink stays neutral; the key beside it carries the colour.
+      color: #52514e;
+      font-size: 12px;
+    }
+  }
+
   .trend {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, Empty, Skeleton, Typography } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -7,6 +7,7 @@ import { cleared, loadComparison } from '@/store/slices/comparisonSlice';
 import { fetchStores } from '@/api/endpoints';
 import { buildComparisonRows, previousPeriod } from '@/utils/comparison';
 import type { Store } from '@/types/domain';
+import ComparisonChart from './ComparisonChart';
 import ComparisonFilters from './ComparisonFilters';
 import ComparisonGrid from './ComparisonGrid';
 import { MIN_STORES, useComparisonFilters } from './useComparisonFilters';
@@ -67,7 +68,13 @@ export default function ComparisonPage() {
 
   const baseline = useMemo(() => previousPeriod(from, to), [from, to]);
 
-  const renderSummary = () => {
+  const hasData = current.length > 0;
+
+  /**
+   * Empty and error outrank everything and look the same in both cards, so
+   * they are resolved once. `null` means "there is something to render".
+   */
+  const blocker = () => {
     if (!enoughStores) {
       return (
         <Empty
@@ -91,8 +98,16 @@ export default function ComparisonPage() {
         />
       );
     }
-    if (loading) return <Skeleton active paragraph={{ rows: 4 }} />;
-    return <ComparisonGrid rows={rows} />;
+    return null;
+  };
+
+  // Skeleton only on the first load. Once there is something on screen, a
+  // refetch dims it in place rather than collapsing the layout.
+  const renderContent = (node: ReactNode, skeletonRows: number) => {
+    const blocked = blocker();
+    if (blocked) return blocked;
+    if (loading && !hasData) return <Skeleton active paragraph={{ rows: skeletonRows }} />;
+    return <div className={loading ? 'comparison__stale' : undefined}>{node}</div>;
   };
 
   return (
@@ -122,6 +137,13 @@ export default function ComparisonPage() {
         onChange={setFilters}
       />
 
+      <Card title="Daily revenue" className="comparison__card">
+        {renderContent(
+          <ComparisonChart data={current} stores={stores} storeIds={storeIds} />,
+          6
+        )}
+      </Card>
+
       <Card
         title="Summary"
         extra={
@@ -131,7 +153,7 @@ export default function ComparisonPage() {
           </Text>
         }
       >
-        {renderSummary()}
+        {renderContent(<ComparisonGrid rows={rows} />, 4)}
       </Card>
     </div>
   );
