@@ -22,7 +22,10 @@ export default function AppLayout() {
           mode="horizontal"
           selectedKeys={[location.pathname]}
           style={{ flex: 1, minWidth: 0 }}
-          items={[{ key: '/overview', label: <Link to="/overview">Overview</Link> }]}
+          items={[
+            { key: '/overview', label: <Link to="/overview">Overview</Link> },
+            { key: '/comparison', label: <Link to="/comparison">Store Comparison</Link> },
+          ]}
         />
         <Dropdown
           menu={{

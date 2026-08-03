@@ -1,0 +1,101 @@
+import { useMemo } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { themeAlpine, type ColDef, type ICellRendererParams } from 'ag-grid-community';
+import type { ComparisonRow } from '@/utils/comparison';
+import { formatCurrency, formatNumber } from '@/utils/format';
+
+interface Props {
+  rows: ComparisonRow[];
+}
+
+/** Signed, coloured percentage with a direction arrow. */
+function TrendCell({ value }: ICellRendererParams<ComparisonRow, number | null>) {
+  if (value == null) {
+    return (
+      <span className="trend trend--none" title="No revenue in the previous period">
+        —
+      </span>
+    );
+  }
+  const up = value >= 0;
+  return (
+    <span className={`trend ${up ? 'trend--up' : 'trend--down'}`}>
+      <span aria-hidden="true">{up ? '▲' : '▼'}</span>
+      {` ${up ? '+' : '−'}${Math.abs(value).toFixed(1)}%`}
+    </span>
+  );
+}
+
+/** Sorts missing values to the bottom instead of treating them as zero. */
+function pctComparator(a: number | null, b: number | null): number {
+  const rank = (v: number | null) => (v == null ? Number.NEGATIVE_INFINITY : v);
+  return rank(a) - rank(b);
+}
+
+export default function ComparisonGrid({ rows }: Props) {
+  // Memoised so AG Grid receives a stable reference and does not tear down
+  // and rebuild its columns on every parent render.
+  const columnDefs = useMemo<ColDef<ComparisonRow>[]>(
+    () => [
+      { field: 'storeName', headerName: 'Store', flex: 2, minWidth: 170 },
+      { field: 'city', headerName: 'City', flex: 1, minWidth: 120 },
+      {
+        field: 'totalRevenue',
+        headerName: 'Total revenue',
+        type: 'numericColumn',
+        flex: 1.4,
+        minWidth: 150,
+        // valueFormatter, not cellRenderer: the underlying value stays a
+        // number, so sorting stays numeric and CSV export gets clean data.
+        valueFormatter: (p) => (p.value == null ? '' : formatCurrency(p.value)),
+      },
+      {
+        field: 'totalTransactions',
+        headerName: 'Transactions',
+        type: 'numericColumn',
+        flex: 1.2,
+        minWidth: 140,
+        valueFormatter: (p) => (p.value == null ? '' : formatNumber(p.value)),
+      },
+      {
+        field: 'avgBasket',
+        headerName: 'Avg basket',
+        type: 'numericColumn',
+        flex: 1.2,
+        minWidth: 140,
+        valueFormatter: (p) => (p.value == null ? '' : formatCurrency(p.value)),
+      },
+      {
+        field: 'pctChange',
+        headerName: '% change',
+        type: 'numericColumn',
+        flex: 1.2,
+        minWidth: 140,
+        headerTooltip: 'Revenue change versus the equally long preceding period',
+        cellRenderer: TrendCell,
+        comparator: pctComparator,
+      },
+    ],
+    []
+  );
+
+  const defaultColDef = useMemo<ColDef<ComparisonRow>>(
+    () => ({ sortable: true, resizable: true, suppressMovable: true }),
+    []
+  );
+
+  return (
+    <div className="comparison-grid">
+      <AgGridReact<ComparisonRow>
+        theme={themeAlpine}
+        rowData={rows}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        getRowId={(p) => p.data.storeId}
+        // 2–5 rows only, so let the grid size itself rather than reserving
+        // a fixed height with empty space below.
+        domLayout="autoHeight"
+      />
+    </div>
+  );
+}

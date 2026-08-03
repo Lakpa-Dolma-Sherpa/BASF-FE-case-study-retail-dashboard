@@ -4,6 +4,7 @@ import LoginPage from '@/pages/LoginPage';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
 import OverviewPage from '@/pages/overview/OverviewPage';
+import ComparisonPage from '@/pages/comparison/ComparisonPage';
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const user = useSelector((s: RootState) => s.auth.user);
@@ -25,6 +26,7 @@ export default function App() {
       >
         <Route index element={<Navigate to="/overview" replace />} />
         <Route path="overview" element={<OverviewPage />} />
+        <Route path="comparison" element={<ComparisonPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

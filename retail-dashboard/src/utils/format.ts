@@ -4,6 +4,10 @@ export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat('de-DE').format(value);
+}
+
 export function formatDate(iso: string): string {
   return dayjs(iso).format('DD.MM.YYYY HH:mm');
 }

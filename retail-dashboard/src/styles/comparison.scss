@@ -1,0 +1,66 @@
+.comparison {
+  &__alert {
+    margin-bottom: 16px;
+  }
+
+  &__baseline {
+    font-size: 12px;
+  }
+
+  .comparison-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    &__field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    &__label {
+      font-size: 12px;
+    }
+
+    // Grows with the viewport but stays wide enough to read five store names.
+    &__stores {
+      min-width: 280px;
+      width: clamp(280px, 42vw, 520px);
+    }
+  }
+
+  .comparison-grid {
+    width: 100%;
+  }
+
+  .trend {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    &--up {
+      color: #389e0d;
+    }
+
+    &--down {
+      color: #cf1322;
+    }
+
+    &--none {
+      color: #8c8c8c;
+    }
+  }
+}
+
+// Filters stack rather than squeeze on narrow screens.
+@media (max-width: 575px) {
+  .comparison .comparison-filters {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__stores {
+      width: 100%;
+    }
+  }
+}

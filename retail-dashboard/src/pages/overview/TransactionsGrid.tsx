@@ -1,14 +1,10 @@
 import { AgGridReact } from 'ag-grid-react';
 import type { Transaction } from '@/types/domain';
-import { ModuleRegistry, AllCommunityModule, themeAlpine } from 'ag-grid-community';
+import { themeAlpine } from 'ag-grid-community';
 
 interface Props {
     rows: Transaction[];
 }
-
-ModuleRegistry.registerModules([
-    AllCommunityModule,
-]);
 
 export default function TransactionsGrid({ rows }: Props) {
     return (
