@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, Empty, Skeleton, Typography } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Alert, Button, Card, Empty, Skeleton, Space, Typography } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import type { AppDispatch, RootState } from '@/store';
@@ -9,7 +10,7 @@ import { buildComparisonRows, previousPeriod } from '@/utils/comparison';
 import type { Store } from '@/types/domain';
 import ComparisonChart from './ComparisonChart';
 import ComparisonFilters from './ComparisonFilters';
-import ComparisonGrid from './ComparisonGrid';
+import ComparisonGrid, { type ComparisonGridHandle } from './ComparisonGrid';
 import { MIN_STORES, useComparisonFilters } from './useComparisonFilters';
 import '@/styles/comparison.scss';
 
@@ -67,6 +68,12 @@ export default function ComparisonPage() {
   );
 
   const baseline = useMemo(() => previousPeriod(from, to), [from, to]);
+
+  const gridRef = useRef<ComparisonGridHandle>(null);
+  const csvFileName = `store-comparison_${from}_to_${to}.csv`;
+  // The grid is only mounted — and therefore only exportable — when it is
+  // actually rendering rows.
+  const canExport = enoughStores && !error && !loading && rows.length > 0;
 
   const hasData = current.length > 0;
 
@@ -147,13 +154,23 @@ export default function ComparisonPage() {
       <Card
         title="Summary"
         extra={
-          <Text type="secondary" className="comparison__baseline">
-            {prettyDate(from)} – {prettyDate(to)} vs {prettyDate(baseline.from)} –{' '}
-            {prettyDate(baseline.to)}
-          </Text>
+          <Space size={12} wrap>
+            <Text type="secondary" className="comparison__baseline">
+              {prettyDate(from)} – {prettyDate(to)} vs {prettyDate(baseline.from)} –{' '}
+              {prettyDate(baseline.to)}
+            </Text>
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              disabled={!canExport}
+              onClick={() => gridRef.current?.exportCsv()}
+            >
+              Download CSV
+            </Button>
+          </Space>
         }
       >
-        {renderContent(<ComparisonGrid rows={rows} />, 4)}
+        {renderContent(<ComparisonGrid ref={gridRef} rows={rows} fileName={csvFileName} />, 4)}
       </Card>
     </div>
   );

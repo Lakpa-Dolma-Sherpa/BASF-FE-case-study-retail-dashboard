@@ -17,7 +17,7 @@ const initialState: TransactionsState = {
 export const loadTransactions = createAsyncThunk(
   'transactions/load',
   async (params: { storeId: string; from: string; to: string }) => {
-    return fetchTransactions(params) as Promise<Transaction[]>;
+    return fetchTransactions(params);
   }
 );
 

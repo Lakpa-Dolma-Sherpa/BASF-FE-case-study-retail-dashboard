@@ -1,11 +1,22 @@
-import { useMemo } from 'react';
+import { useImperativeHandle, useMemo, useRef, type Ref } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { themeAlpine, type ColDef, type ICellRendererParams } from 'ag-grid-community';
+import {
+  themeAlpine,
+  type ColDef,
+  type ICellRendererParams,
+  type ProcessCellForExportParams,
+} from 'ag-grid-community';
 import type { ComparisonRow } from '@/utils/comparison';
 import { formatCurrency, formatNumber } from '@/utils/format';
 
+export interface ComparisonGridHandle {
+  exportCsv: () => void;
+}
+
 interface Props {
   rows: ComparisonRow[];
+  fileName: string;
+  ref?: Ref<ComparisonGridHandle>;
 }
 
 /** Signed, coloured percentage with a direction arrow. */
@@ -32,7 +43,33 @@ function pctComparator(a: number | null, b: number | null): number {
   return rank(a) - rank(b);
 }
 
-export default function ComparisonGrid({ rows }: Props) {
+/**
+ * CSV carries analysis-ready values, not display strings: `18357.04` rather
+ * than `"18.357,04 €"`, which Excel would treat as text. Percentages are
+ * rounded to match what the grid shows; a missing baseline stays blank.
+ */
+function processCell(params: ProcessCellForExportParams): string {
+  const { value, column } = params;
+  if (value == null) return '';
+  if (column.getColId() === 'pctChange') return (value as number).toFixed(1);
+  return String(value);
+}
+
+export default function ComparisonGrid({ rows, fileName, ref }: Props) {
+  const gridRef = useRef<AgGridReact<ComparisonRow>>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      exportCsv: () => {
+        // Native AG Grid export: writes exactly what the grid is showing —
+        // the current sort order and only the visible columns.
+        gridRef.current?.api.exportDataAsCsv({ fileName, processCellCallback: processCell });
+      },
+    }),
+    [fileName]
+  );
+
   // Memoised so AG Grid receives a stable reference and does not tear down
   // and rebuild its columns on every parent render.
   const columnDefs = useMemo<ColDef<ComparisonRow>[]>(
@@ -80,13 +117,21 @@ export default function ComparisonGrid({ rows }: Props) {
   );
 
   const defaultColDef = useMemo<ColDef<ComparisonRow>>(
-    () => ({ sortable: true, resizable: true, suppressMovable: true }),
+    () => ({
+      sortable: true,
+      resizable: true,
+      suppressMovable: true,
+      // No per-column filters: the store picker and date range are the only
+      // filters in this feature, and they already scope every row.
+      filter: false,
+    }),
     []
   );
 
   return (
     <div className="comparison-grid">
       <AgGridReact<ComparisonRow>
+        ref={gridRef}
         theme={themeAlpine}
         rowData={rows}
         columnDefs={columnDefs}
