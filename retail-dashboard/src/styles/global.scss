@@ -17,10 +17,19 @@ body {
   }
 }
 
+// 900px was too narrow for data-dense pages — it forced the comparison grid
+// into a horizontal scroll while leaving wide empty gutters on desktop.
 .app-content {
-  max-width: 900px;
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 12px;
+  padding: 16px 24px;
+}
+
+@media (max-width: 767px) {
+  .app-content {
+    padding: 12px;
+  }
 }
 
 .page-title {

@@ -4,13 +4,28 @@ import type { DailyRevenuePoint, Store } from '@/types/domain';
 import { formatCurrency } from '@/utils/format';
 import { useSeriesColors } from './seriesColors';
 
-const HEIGHT = 340;
-// Bottom margin reserves the x-axis band inside the SVG, so tick labels can
-// never be clipped into a nested scrollbar.
-// left fits de-DE compact currency ticks ("18 Tsd. €"), which are wider than
-// the en-US equivalent.
-const MARGIN = { top: 12, right: 20, bottom: 34, left: 78 };
-const MIN_WIDTH = 320;
+const MIN_WIDTH = 240;
+
+/**
+ * Geometry scales with the container instead of being fixed.
+ *
+ * A 340px-tall chart looks like a thin strip once the card is 1400px wide, so
+ * height grows with width. Margins shrink on phones, where an 78px axis gutter
+ * would eat a quarter of the screen.
+ */
+function layoutFor(width: number) {
+  const compact = width < 560;
+  return {
+    compact,
+    height: compact ? 260 : width < 992 ? 330 : 420,
+    // Bottom margin reserves the x-axis band inside the SVG, so tick labels
+    // are never clipped into a nested scrollbar. Left fits de-DE compact
+    // currency ticks ("18 Tsd. €"), which are wider than the en-US form.
+    margin: compact
+      ? { top: 12, right: 14, bottom: 30, left: 52 }
+      : { top: 16, right: 24, bottom: 34, left: 78 },
+  };
+}
 
 // Recessive chrome: one step off the white surface, solid hairlines.
 const GRID = '#ebebe8';
@@ -23,6 +38,13 @@ const formatFullDate = d3.utcFormat('%a %d %b %Y');
 const axisCurrency = new Intl.NumberFormat('de-DE', {
   style: 'currency',
   currency: 'EUR',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+// On phones the € symbol is dropped — the card title already says "revenue"
+// and the gutter is too narrow to spend on a repeated unit.
+const axisNumber = new Intl.NumberFormat('de-DE', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
@@ -55,7 +77,7 @@ interface HoverState {
 export default function ComparisonChart({ data, stores, storeIds }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [width, setWidth] = useState(MIN_WIDTH);
+  const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<HoverState | null>(null);
 
   const colors = useSeriesColors(storeIds);
@@ -63,12 +85,21 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setWidth(Math.max(MIN_WIDTH, entry.contentRect.width));
-    });
+
+    // Measure synchronously first: a ResizeObserver only guarantees a callback
+    // on *change*, so relying on it alone can leave the chart at its initial
+    // width if the card is already laid out when the chart mounts.
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+
+    const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Memoised so `margin` keeps a stable identity — otherwise the draw effect
+  // would see a new object every render and rebuild the SVG each time.
+  const { compact, height, margin } = useMemo(() => layoutFor(width), [width]);
 
   const { series, dates } = useMemo(() => {
     // Index once instead of scanning the array per store per day.
@@ -96,14 +127,15 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
-    if (!dates.length || !series.length) return;
+    // Skip the first paint, before the container has been measured.
+    if (!dates.length || !series.length || width < MIN_WIDTH) return;
 
-    const innerRight = width - MARGIN.right;
-    const innerBottom = HEIGHT - MARGIN.bottom;
+    const innerRight = width - margin.right;
+    const innerBottom = height - margin.bottom;
 
-    const x = d3.scaleUtc().domain(d3.extent(dates) as [Date, Date]).range([MARGIN.left, innerRight]);
+    const x = d3.scaleUtc().domain(d3.extent(dates) as [Date, Date]).range([margin.left, innerRight]);
     const maxRevenue = d3.max(series, (s) => d3.max(s.points, (p) => p.revenue ?? 0)) ?? 0;
-    const y = d3.scaleLinear().domain([0, maxRevenue]).nice().range([innerBottom, MARGIN.top]);
+    const y = d3.scaleLinear().domain([0, maxRevenue]).nice().range([innerBottom, margin.top]);
 
     // Horizontal gridlines only — vertical ones would compete with the crosshair.
     svg
@@ -111,7 +143,7 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
       .selectAll('line')
       .data(y.ticks(5))
       .join('line')
-      .attr('x1', MARGIN.left)
+      .attr('x1', margin.left)
       .attr('x2', innerRight)
       .attr('y1', (d) => y(d))
       .attr('y2', (d) => y(d))
@@ -120,10 +152,18 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
 
     const yAxis = svg
       .append('g')
-      .attr('transform', `translate(${MARGIN.left},0)`)
-      .call(d3.axisLeft(y).ticks(5).tickFormat((v) => axisCurrency.format(v as number)).tickSize(0));
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(
+        d3
+          .axisLeft(y)
+          .ticks(compact ? 4 : 5)
+          .tickFormat((v) =>
+            compact ? axisNumber.format(v as number) : axisCurrency.format(v as number)
+          )
+          .tickSize(0)
+      );
     yAxis.select('.domain').remove();
-    yAxis.selectAll('text').attr('fill', AXIS_TEXT).attr('font-size', 11);
+    yAxis.selectAll('text').attr('fill', AXIS_TEXT).attr('font-size', compact ? 10 : 11);
 
     const xAxis = svg
       .append('g')
@@ -131,13 +171,13 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
       .call(
         d3
           .axisBottom(x)
-          .ticks(Math.max(2, Math.floor((innerRight - MARGIN.left) / 110)))
+          .ticks(Math.max(2, Math.floor((innerRight - margin.left) / 110)))
           .tickFormat((v) => formatAxisDate(v as Date))
           .tickSize(0)
           .tickPadding(10)
       );
     xAxis.select('.domain').attr('stroke', GRID);
-    xAxis.selectAll('text').attr('fill', AXIS_TEXT).attr('font-size', 11);
+    xAxis.selectAll('text').attr('fill', AXIS_TEXT).attr('font-size', compact ? 10 : 11);
 
     const line = d3
       .line<SeriesPoint>()
@@ -164,7 +204,7 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
       .append('line')
       .attr('stroke', '#b8b8b3')
       .attr('stroke-width', 1)
-      .attr('y1', MARGIN.top)
+      .attr('y1', margin.top)
       .attr('y2', innerBottom)
       .style('display', 'none');
 
@@ -187,7 +227,7 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
 
     const move = (event: PointerEvent | FocusEvent) => {
       const [px] = d3.pointer(event, svg.node());
-      const target = x.invert(Math.max(MARGIN.left, Math.min(innerRight, px)));
+      const target = x.invert(Math.max(margin.left, Math.min(innerRight, px)));
       // Snap to the nearest day so the reader aims at a date, not at a 2px line.
       const i = d3.leastIndex(dates, (a, b) =>
         Math.abs(+a - +target) - Math.abs(+b - +target)
@@ -219,10 +259,10 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
 
     svg
       .append('rect')
-      .attr('x', MARGIN.left)
-      .attr('y', MARGIN.top)
-      .attr('width', Math.max(0, innerRight - MARGIN.left))
-      .attr('height', Math.max(0, innerBottom - MARGIN.top))
+      .attr('x', margin.left)
+      .attr('y', margin.top)
+      .attr('width', Math.max(0, innerRight - margin.left))
+      .attr('height', Math.max(0, innerBottom - margin.top))
       .attr('fill', 'transparent')
       .attr('tabindex', 0)
       .attr('role', 'application')
@@ -233,7 +273,7 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
       .on('blur', hide);
 
     return hide;
-  }, [series, dates, width]);
+  }, [series, dates, width, height, margin, compact]);
 
   const legend = useMemo(
     () => series.map((s) => ({ storeId: s.storeId, name: s.name, color: s.color })),
@@ -245,7 +285,7 @@ export default function ComparisonChart({ data, stores, storeIds }: Props) {
   return (
     <div className="chart" ref={containerRef}>
       <div className="chart__plot">
-        <svg ref={svgRef} width={width} height={HEIGHT} role="img" />
+        <svg ref={svgRef} width={width} height={height} role="img" />
 
         {hover && (
           <div

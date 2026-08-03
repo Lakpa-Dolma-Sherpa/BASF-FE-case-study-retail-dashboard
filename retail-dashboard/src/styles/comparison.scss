@@ -47,6 +47,19 @@
     margin-bottom: 16px;
   }
 
+  // The card header holds a title plus the baseline range and export button;
+  // let it wrap into two rows instead of squeezing the extras.
+  .ant-card-head {
+    .ant-card-head-wrapper {
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+
+    .ant-card-extra {
+      margin-inline-start: auto;
+    }
+  }
+
   .chart {
     width: 100%;
 
@@ -75,6 +88,7 @@
       top: 12px;
       transform: translateX(12px);
       min-width: 190px;
+      max-width: min(240px, 68vw);
       padding: 8px 10px;
       background: #fff;
       border: 1px solid #e5e5e2;
@@ -156,14 +170,62 @@
   }
 }
 
+// Tablet: reclaim the padding the desktop cards spend generously.
+@media (max-width: 991px) {
+  .comparison {
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .chart__legend {
+      gap: 6px 14px;
+    }
+  }
+}
+
 // Filters stack rather than squeeze on narrow screens.
 @media (max-width: 575px) {
-  .comparison .comparison-filters {
-    flex-direction: column;
-    align-items: stretch;
+  .comparison {
+    .comparison-filters {
+      flex-direction: column;
+      align-items: stretch;
 
-    &__stores {
+      &__stores {
+        width: 100%;
+      }
+    }
+
+    // The comparison range is a nicety, not a control — drop it before the
+    // export button, which is the one thing the header must keep.
+    .comparison__baseline {
+      display: none;
+    }
+
+    .ant-picker {
       width: 100%;
+    }
+
+    .ant-card-body {
+      padding: 12px;
+    }
+
+    .ant-card-head {
+      padding-inline: 12px;
+    }
+
+    // Names are the long part of a legend row; let them wrap instead of
+    // forcing a single overflowing line.
+    .chart__legend-item {
+      font-size: 11px;
+    }
+
+    .chart__tooltip {
+      min-width: 0;
+      padding: 6px 8px;
+    }
+
+    .chart__tooltip-name {
+      max-width: 96px;
     }
   }
 }

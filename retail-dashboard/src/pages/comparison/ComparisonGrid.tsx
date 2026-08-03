@@ -74,14 +74,17 @@ export default function ComparisonGrid({ rows, fileName, ref }: Props) {
   // and rebuild its columns on every parent render.
   const columnDefs = useMemo<ColDef<ComparisonRow>[]>(
     () => [
-      { field: 'storeName', headerName: 'Store', flex: 2, minWidth: 170 },
-      { field: 'city', headerName: 'City', flex: 1, minWidth: 120 },
+      // minWidth is the tablet/mobile floor; flex distributes the surplus on
+      // desktop. Their sum stays under a ~760px card body so the grid only
+      // scrolls on genuinely small screens.
+      { field: 'storeName', headerName: 'Store', flex: 2, minWidth: 150 },
+      { field: 'city', headerName: 'City', flex: 1, minWidth: 100 },
       {
         field: 'totalRevenue',
         headerName: 'Total revenue',
         type: 'numericColumn',
         flex: 1.4,
-        minWidth: 150,
+        minWidth: 130,
         // valueFormatter, not cellRenderer: the underlying value stays a
         // number, so sorting stays numeric and CSV export gets clean data.
         valueFormatter: (p) => (p.value == null ? '' : formatCurrency(p.value)),
@@ -91,7 +94,7 @@ export default function ComparisonGrid({ rows, fileName, ref }: Props) {
         headerName: 'Transactions',
         type: 'numericColumn',
         flex: 1.2,
-        minWidth: 140,
+        minWidth: 120,
         valueFormatter: (p) => (p.value == null ? '' : formatNumber(p.value)),
       },
       {
@@ -99,7 +102,7 @@ export default function ComparisonGrid({ rows, fileName, ref }: Props) {
         headerName: 'Avg basket',
         type: 'numericColumn',
         flex: 1.2,
-        minWidth: 140,
+        minWidth: 120,
         valueFormatter: (p) => (p.value == null ? '' : formatCurrency(p.value)),
       },
       {
@@ -107,7 +110,7 @@ export default function ComparisonGrid({ rows, fileName, ref }: Props) {
         headerName: '% change',
         type: 'numericColumn',
         flex: 1.2,
-        minWidth: 140,
+        minWidth: 130,
         headerTooltip: 'Revenue change versus the equally long preceding period',
         cellRenderer: TrendCell,
         comparator: pctComparator,

@@ -40,6 +40,14 @@
     }
   }
 
+  .revenue-chart {
+    width: 100%;
+
+    svg {
+      display: block;
+    }
+  }
+
   .latest-list {
     .latest-item {
       padding: 8px 4px;
